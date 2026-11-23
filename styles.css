@@ -474,6 +474,32 @@ textarea {
   margin: 0 8px;
 }
 
+.hidden {
+  display: none !important;
+}
+
+.shared-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: rgba(56, 201, 132, 0.12);
+  border: 1px solid rgba(56, 201, 132, 0.35);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.share-toast {
+  margin: 0 0 12px;
+  min-height: 18px;
+  font-size: 13px;
+  color: var(--ok);
+}
+
 @media print {
   body {
     background: #ffffff;
