@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "brand_name": "PlAIground Lab",
+  "tool_name": "QuoteKit",
+  "portal_url": "https://plaigroundlab.com",
+  "pro_checkout_url": "",
+  "pro_price_usd": 9,
+  "currencies": [
+    {"code": "USD", "symbol": "$", "decimals": 2},
+    {"code": "TWD", "symbol": "NT$", "decimals": 0},
+    {"code": "EUR", "symbol": "€", "decimals": 2}
+  ],
+  "project_multipliers": {
+    "standard": 1.0,
+    "rush": 1.35,
+    "retainer_discount": 0.9
+  }
+}
