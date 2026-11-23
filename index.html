@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QuoteKit — Freelance Rate & Instant PDF Invoice Studio | PlAIground Lab</title>
   <meta name="description" content="Calculate your true freelance hourly rate and export clean client-ready quotes and PDF invoices locally in your browser. Zero tracking, 100% private.">
+  <link rel="canonical" href="https://quotekit.plaigroundlab.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PlAIground Lab">
+  <meta property="og:title" content="QuoteKit — Freelance Rate & Instant PDF Invoice Studio">
+  <meta property="og:description" content="Calculate your freelance hourly floor and share read-only quote links or PDF invoices in 60 seconds—100% client-side, zero account needed.">
+  <meta property="og:url" content="https://quotekit.plaigroundlab.com/">
+  <meta name="twitter:card" content="summary">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -98,6 +105,10 @@
 
     <!-- Tab 2: Instant Quote / Invoice Builder -->
     <section id="panel-invoice" class="panel">
+      <div id="shared-banner" class="shared-banner no-print hidden" role="status">
+        <span data-i18n="sharedBannerText">Viewing a read-only shared quote. Duplicate it to customize your own draft.</span>
+        <button type="button" id="btn-clone-draft" class="btn-primary" data-i18n="btnCloneDraft">Duplicate as My Draft</button>
+      </div>
       <div class="invoice-toolbar no-print">
         <div class="toolbar-left">
           <label class="inline-field">
@@ -118,9 +129,11 @@
         </div>
         <div class="toolbar-right">
           <button type="button" id="btn-add-item" class="btn-secondary" data-i18n="btnAddItem">+ Add Line Item</button>
+          <button type="button" id="btn-share-link" class="btn-secondary" data-i18n="btnShareLink">Copy Share Link</button>
           <button type="button" id="btn-print-pdf" class="btn-primary" data-i18n="btnPrintPdf">Print / Save PDF</button>
         </div>
       </div>
+      <p id="share-toast" class="share-toast no-print" aria-live="polite"></p>
 
       <!-- Printable Sheet -->
       <div class="invoice-paper" id="invoice-paper">
@@ -211,7 +224,11 @@
   </main>
 
   <footer class="footer no-print">
-    <span>© 2026 <a href="https://plaigroundlab.com" target="_blank" rel="noopener">PlAIground Lab</a></span>
+    <span>© 2026 <a href="https://plaigroundlab.com/?utm_source=quotekit&utm_medium=footer" target="_blank" rel="noopener">PlAIground Lab</a></span>
+    <span class="dot">·</span>
+    <a href="https://computequote.plaigroundlab.com/?utm_source=quotekit&utm_medium=footer" target="_blank" rel="noopener">ComputeQuote</a>
+    <span class="dot">·</span>
+    <a href="https://blog.plaigroundlab.com/?utm_source=quotekit&utm_medium=footer" target="_blank" rel="noopener">AI Geek Blog</a>
     <span class="dot">·</span>
     <span data-i18n="footerPrivacy">All calculations run locally in your browser. Zero data uploaded.</span>
   </footer>

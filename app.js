@@ -27,7 +27,12 @@ const I18N = {
     optQuote: "報價單 (QUOTE)",
     lblInvCurrency: "單據幣別",
     btnAddItem: "+ 新增項目",
+    btnShareLink: "複製分享連結",
     btnPrintPdf: "列印 / 另存 PDF",
+    sharedBannerText: "你正在檢視唯讀分享報價單。點右側按鈕可複製成自己的草稿自由編輯。",
+    btnCloneDraft: "複製為我的報價草稿",
+    shareCopied: "已複製唯讀報價連結（資料僅存在網址 #q= 中，不上傳伺服器）。",
+    shareCopyFallback: "網址列已更新為可分享的唯讀連結，直接複製網址即可傳給客戶。",
     lblFromName: "開立人／工作室名稱",
     lblFromEmail: "聯絡方式 / Email",
     lblDocNumber: "單據編號",
@@ -78,7 +83,12 @@ const I18N = {
     optQuote: "ESTIMATE / QUOTE",
     lblInvCurrency: "Currency",
     btnAddItem: "+ Add Line Item",
+    btnShareLink: "Copy Share Link",
     btnPrintPdf: "Print / Save PDF",
+    sharedBannerText: "Viewing a read-only shared quote. Duplicate it to customize your own draft.",
+    btnCloneDraft: "Duplicate as My Draft",
+    shareCopied: "Copied read-only quote link (payload stays inside the #q= URL hash — zero server upload).",
+    shareCopyFallback: "Updated page URL with your read-only quote link. Copy the address bar to share.",
     lblFromName: "From (Your Name / Studio)",
     lblFromEmail: "Contact / Email",
     lblDocNumber: "Doc #",
@@ -118,6 +128,98 @@ const DEFAULT_CONFIG = {
 let appConfig = DEFAULT_CONFIG;
 let currentLang = "zh-TW";
 let lastComputedHourly = 0;
+let isReadOnlyShared = false;
+
+function encodeQuotePayload(payload) {
+  const bytes = new TextEncoder().encode(JSON.stringify(payload));
+  let bin = "";
+  bytes.forEach((b) => {
+    bin += String.fromCharCode(b);
+  });
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function decodeQuotePayload(hashStr) {
+  if (!hashStr || !hashStr.startsWith("#q=")) return null;
+  let b64 = hashStr.slice(3).replace(/-/g, "+").replace(/_/g, "/");
+  while (b64.length % 4) b64 += "=";
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i += 1) {
+    bytes[i] = bin.charCodeAt(i);
+  }
+  const obj = JSON.parse(new TextDecoder().decode(bytes));
+  return obj && typeof obj === "object" ? obj : null;
+}
+
+function collectQuoteState() {
+  const items = [];
+  document.querySelectorAll("#inv-items-body tr").forEach((tr) => {
+    const desc = String(tr.querySelector(".item-desc").value || "").slice(0, 200);
+    const qty = Math.max(0, Number(tr.querySelector(".item-qty").value) || 0);
+    const rate = Math.max(0, Number(tr.querySelector(".item-rate").value) || 0);
+    items.push([desc, qty, rate]);
+  });
+  return {
+    v: 1,
+    t: document.getElementById("inv-doc-type").value === "QUOTE" ? "QUOTE" : "INVOICE",
+    c: document.getElementById("inv-currency").value,
+    n: String(document.getElementById("inv-number").value || "").slice(0, 64),
+    d: String(document.getElementById("inv-date").value || "").slice(0, 20),
+    f: String(document.getElementById("inv-from").value || "").slice(0, 120),
+    e: String(document.getElementById("inv-from-email").value || "").slice(0, 120),
+    b: String(document.getElementById("inv-client").value || "").slice(0, 120),
+    s: String(document.getElementById("inv-notes").value || "").slice(0, 500),
+    disc: Math.min(100, Math.max(0, Number(document.getElementById("inv-discount").value) || 0)),
+    tax: Math.min(50, Math.max(0, Number(document.getElementById("inv-tax").value) || 0)),
+    items: items.slice(0, 30),
+  };
+}
+
+function setReadOnlyMode(readOnly) {
+  isReadOnlyShared = Boolean(readOnly);
+  const banner = document.getElementById("shared-banner");
+  if (banner) banner.classList.toggle("hidden", !isReadOnlyShared);
+  document.querySelectorAll("#panel-invoice input, #panel-invoice select, #panel-invoice textarea").forEach((el) => {
+    el.disabled = isReadOnlyShared;
+  });
+  const btnAdd = document.getElementById("btn-add-item");
+  if (btnAdd) btnAdd.classList.toggle("hidden", isReadOnlyShared);
+  document.querySelectorAll("#panel-invoice .btn-remove").forEach((b) => {
+    b.disabled = isReadOnlyShared;
+    b.classList.toggle("hidden", isReadOnlyShared);
+  });
+}
+
+function applySharedPayload(data) {
+  const docType = data.t === "QUOTE" ? "QUOTE" : "INVOICE";
+  document.getElementById("inv-doc-type").value = docType;
+  document.getElementById("inv-type-badge").textContent = docType;
+  const curr = getCurrencySpec(String(data.c || "USD")).code;
+  document.getElementById("inv-currency").value = curr;
+  if (typeof data.n === "string") document.getElementById("inv-number").value = data.n.slice(0, 64);
+  if (typeof data.d === "string") document.getElementById("inv-date").value = data.d.slice(0, 20);
+  if (typeof data.f === "string") document.getElementById("inv-from").value = data.f.slice(0, 120);
+  if (typeof data.e === "string") document.getElementById("inv-from-email").value = data.e.slice(0, 120);
+  if (typeof data.b === "string") document.getElementById("inv-client").value = data.b.slice(0, 120);
+  if (typeof data.s === "string") document.getElementById("inv-notes").value = data.s.slice(0, 500);
+  document.getElementById("inv-discount").value = String(Math.min(100, Math.max(0, Number(data.disc) || 0)));
+  document.getElementById("inv-tax").value = String(Math.min(50, Math.max(0, Number(data.tax) || 0)));
+
+  const tbody = document.getElementById("inv-items-body");
+  tbody.innerHTML = "";
+  const items = Array.isArray(data.items) && data.items.length ? data.items : [[I18N[currentLang].defaultItem1, 1, 100]];
+  items.slice(0, 30).forEach((row) => {
+    if (!Array.isArray(row)) return;
+    const desc = String(row[0] || "").slice(0, 200);
+    const qty = Math.max(0, Number(row[1]) || 0);
+    const rate = Math.max(0, Number(row[2]) || 0);
+    tbody.appendChild(createLineItemRow(desc, qty, rate));
+  });
+  recalculateInvoice();
+  switchTab("invoice");
+  setReadOnlyMode(true);
+}
 
 function getCurrencySpec(code) {
   return (appConfig.currencies || DEFAULT_CONFIG.currencies).find((c) => c.code === code) || {
@@ -337,8 +439,37 @@ async function init() {
   document.getElementById("btn-print-pdf").addEventListener("click", () => {
     window.print();
   });
+  document.getElementById("btn-share-link").addEventListener("click", async () => {
+    const hash = "#q=" + encodeQuotePayload(collectQuoteState());
+    const url = window.location.origin + window.location.pathname + hash;
+    try {
+      window.history.replaceState(null, "", hash);
+    } catch {}
+    const toast = document.getElementById("share-toast");
+    const dict = I18N[currentLang];
+    try {
+      await navigator.clipboard.writeText(url);
+      if (toast) toast.textContent = dict.shareCopied;
+    } catch {
+      if (toast) toast.textContent = dict.shareCopyFallback;
+    }
+  });
+  document.getElementById("btn-clone-draft").addEventListener("click", () => {
+    setReadOnlyMode(false);
+    try {
+      window.history.replaceState(null, "", window.location.pathname);
+    } catch {}
+    const toast = document.getElementById("share-toast");
+    if (toast) toast.textContent = "";
+  });
 
   applyLanguage("zh-TW");
+  try {
+    const shared = decodeQuotePayload(window.location.hash);
+    if (shared && shared.v === 1) {
+      applySharedPayload(shared);
+    }
+  } catch {}
 }
 
 document.addEventListener("DOMContentLoaded", init);
