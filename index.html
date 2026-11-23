@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuoteKit — Freelance Rate & Instant PDF Invoice Studio | PlAIground Lab</title>
+  <meta name="description" content="Calculate your true freelance hourly rate and export clean client-ready quotes and PDF invoices locally in your browser. Zero tracking, 100% private.">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar no-print">
+    <div class="brand-wrap">
+      <span class="brand-badge">PlAIground Lab</span>
+      <h1 class="brand-title" data-i18n="appTitle">QuoteKit</h1>
+      <span class="privacy-pill" data-i18n="privacyPill">100% Client-Side</span>
+    </div>
+    <div class="topbar-actions">
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" class="lang-btn active" data-lang="zh-TW">繁中</button>
+        <button type="button" class="lang-btn" data-lang="en">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero no-print">
+      <p class="hero-kicker" data-i18n="heroKicker">FREELANCE PRICING & INVOICING</p>
+      <h2 data-i18n="heroHeadline">Stop Underpricing. Send Client-Ready Quotes & PDF Invoices in 60 Seconds.</h2>
+      <p class="hero-sub" data-i18n="heroSub">Compute your break-even hourly rate after taxes, overhead, and time off—then build and print clean PDF quotes directly in your browser without signup.</p>
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab-btn active" data-tab="calculator" data-i18n="tabCalculator">1. Rate Calculator</button>
+        <button type="button" class="tab-btn" data-tab="invoice" data-i18n="tabInvoice">2. Quote & Invoice PDF</button>
+      </div>
+    </section>
+
+    <!-- Tab 1: Freelance Rate Calculator -->
+    <section id="panel-calculator" class="panel active no-print">
+      <div class="grid-2">
+        <div class="card">
+          <h3 data-i18n="calcInputsTitle">Income & Capacity Inputs</h3>
+          <div class="form-grid">
+            <label class="field">
+              <span data-i18n="lblCurrency">Currency</span>
+              <select id="calc-currency">
+                <option value="USD">USD ($)</option>
+                <option value="TWD">TWD (NT$)</option>
+                <option value="EUR">EUR (€)</option>
+              </select>
+            </label>
+            <label class="field">
+              <span data-i18n="lblTargetIncome">Target Net Annual Income</span>
+              <input id="calc-income" type="number" min="0" step="500" value="85000">
+            </label>
+            <label class="field">
+              <span data-i18n="lblBillableHours">Billable Hours / Week</span>
+              <input id="calc-hours" type="number" min="1" max="80" step="1" value="25">
+            </label>
+            <label class="field">
+              <span data-i18n="lblVacationWeeks">Weeks Off / Year</span>
+              <input id="calc-vacation" type="number" min="0" max="40" step="1" value="4">
+            </label>
+            <label class="field">
+              <span data-i18n="lblOverheadPct">Software & Overhead (%)</span>
+              <input id="calc-overhead" type="number" min="0" max="100" step="1" value="12">
+            </label>
+            <label class="field">
+              <span data-i18n="lblTaxBufferPct">Tax & Self-Employment Buffer (%)</span>
+              <input id="calc-tax" type="number" min="0" max="80" step="1" value="25">
+            </label>
+          </div>
+        </div>
+
+        <div class="card result-card">
+          <h3 data-i18n="calcResultsTitle">Recommended Pricing Floor</h3>
+          <div class="metric-grid">
+            <div class="metric-box highlight">
+              <span class="metric-label" data-i18n="lblHourlyRate">Hourly Rate</span>
+              <strong id="res-hourly" class="metric-value">$0</strong>
+            </div>
+            <div class="metric-box">
+              <span class="metric-label" data-i18n="lblDayRate">Day Rate (8h)</span>
+              <strong id="res-day" class="metric-value">$0</strong>
+            </div>
+            <div class="metric-box">
+              <span class="metric-label" data-i18n="lblRushRate">Rush Rate (+35%)</span>
+              <strong id="res-rush" class="metric-value">$0</strong>
+            </div>
+            <div class="metric-box">
+              <span class="metric-label" data-i18n="lblRetainerRate">Retainer Rate (-10%)</span>
+              <strong id="res-retainer" class="metric-value">$0</strong>
+            </div>
+          </div>
+          <p class="calc-note" id="calc-billable-summary"></p>
+          <button type="button" id="btn-apply-rate" class="btn-primary" data-i18n="btnApplyRate">Use This Hourly Rate in Quote Builder →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 2: Instant Quote / Invoice Builder -->
+    <section id="panel-invoice" class="panel">
+      <div class="invoice-toolbar no-print">
+        <div class="toolbar-left">
+          <label class="inline-field">
+            <span data-i18n="lblDocType">Document Type</span>
+            <select id="inv-doc-type">
+              <option value="INVOICE" data-i18n="optInvoice">INVOICE</option>
+              <option value="QUOTE" data-i18n="optQuote">ESTIMATE / QUOTE</option>
+            </select>
+          </label>
+          <label class="inline-field">
+            <span data-i18n="lblInvCurrency">Currency</span>
+            <select id="inv-currency">
+              <option value="USD">USD ($)</option>
+              <option value="TWD">TWD (NT$)</option>
+              <option value="EUR">EUR (€)</option>
+            </select>
+          </label>
+        </div>
+        <div class="toolbar-right">
+          <button type="button" id="btn-add-item" class="btn-secondary" data-i18n="btnAddItem">+ Add Line Item</button>
+          <button type="button" id="btn-print-pdf" class="btn-primary" data-i18n="btnPrintPdf">Print / Save PDF</button>
+        </div>
+      </div>
+
+      <!-- Printable Sheet -->
+      <div class="invoice-paper" id="invoice-paper">
+        <div class="inv-header">
+          <div>
+            <div id="inv-type-badge" class="inv-badge">INVOICE</div>
+            <div class="inv-meta-grid">
+              <label><span data-i18n="lblFromName">From (Your Name / Studio)</span>
+                <input id="inv-from" type="text" value="Independent Consulting Studio">
+              </label>
+              <label><span data-i18n="lblFromEmail">Contact / Email</span>
+                <input id="inv-from-email" type="text" value="billing@example.com">
+              </label>
+            </div>
+          </div>
+          <div class="inv-right-meta">
+            <label><span data-i18n="lblDocNumber">Doc #</span>
+              <input id="inv-number" type="text" value="INV-2026-001">
+            </label>
+            <label><span data-i18n="lblIssueDate">Issue Date</span>
+              <input id="inv-date" type="date">
+            </label>
+            <label><span data-i18n="lblClientName">Bill To (Client)</span>
+              <input id="inv-client" type="text" value="Acme Digital Co.">
+            </label>
+          </div>
+        </div>
+
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th data-i18n="colDescription">Description</th>
+              <th class="num" data-i18n="colQty">Qty / Hrs</th>
+              <th class="num" data-i18n="colUnitPrice">Unit Rate</th>
+              <th class="num" data-i18n="colAmount">Amount</th>
+              <th class="no-print action-col"></th>
+            </tr>
+          </thead>
+          <tbody id="inv-items-body"></tbody>
+        </table>
+
+        <div class="inv-bottom">
+          <div class="inv-notes">
+            <label>
+              <span data-i18n="lblNotes">Payment Terms & Notes</span>
+              <textarea id="inv-notes" rows="3">Net 14 days via ACH, bank transfer, or Stripe link. Thank you for your business.</textarea>
+            </label>
+          </div>
+          <div class="inv-totals">
+            <div class="tot-row">
+              <span data-i18n="lblSubtotal">Subtotal</span>
+              <strong id="inv-subtotal">$0.00</strong>
+            </div>
+            <div class="tot-row">
+              <label class="tot-inline">
+                <span data-i18n="lblDiscountPct">Discount (%)</span>
+                <input id="inv-discount" type="number" min="0" max="100" step="1" value="0" class="tiny-input">
+              </label>
+              <strong id="inv-discount-amt">-$0.00</strong>
+            </div>
+            <div class="tot-row">
+              <label class="tot-inline">
+                <span data-i18n="lblTaxPct">Tax (%)</span>
+                <input id="inv-tax" type="number" min="0" max="50" step="0.5" value="0" class="tiny-input">
+              </label>
+              <strong id="inv-tax-amt">$0.00</strong>
+            </div>
+            <div class="tot-row grand">
+              <span data-i18n="lblTotal">Total Due</span>
+              <strong id="inv-total">$0.00</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Subtle Pro Templates Card (config-driven, zero hardcoded Stripe links) -->
+    <section class="pro-banner no-print">
+      <div class="pro-copy">
+        <span class="pro-tag" data-i18n="proTag">PRO PACK</span>
+        <h3 data-i18n="proTitle">Want 12 Bilingual Contract + Scope-of-Work Templates & Retainer Calculators?</h3>
+        <p data-i18n="proDesc">Includes agency-grade SOW clauses, late-fee terms, and milestone payment schedules ready for Notion, Google Docs, and PDF export.</p>
+      </div>
+      <div class="pro-cta-wrap">
+        <a id="pro-cta-btn" class="btn-secondary disabled" href="#pro-soon" aria-disabled="true" data-i18n="proCtaSoon">Pro Pack Launching Soon ($9)</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer no-print">
+    <span>© 2026 <a href="https://plaigroundlab.com" target="_blank" rel="noopener">PlAIground Lab</a></span>
+    <span class="dot">·</span>
+    <span data-i18n="footerPrivacy">All calculations run locally in your browser. Zero data uploaded.</span>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
